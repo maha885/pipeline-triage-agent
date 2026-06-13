@@ -212,6 +212,9 @@ uvicorn app.main:app --reload --port 8000
 
 This project was developed with assistance from:
 
+- **Claude (Anthropic)** - used for architecture design, code generation
+  (FastAPI backend, agent logic, dashboard frontend), debugging, and
+  documentation throughout development.
 - **GitHub Copilot** - in-editor coding assistance.
 - **Llama 3.3 70B Instruct (Azure AI Foundry)** - this is not a development
   tool but the core AI component of the product itself: it's the model that
