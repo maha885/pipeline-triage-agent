@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pipeline Triage Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0D1117;
+    --surface: #161B22;
+    --surface-hover: #1C2330;
+    --border: #30363D;
+    --text: #E6EDF3;
+    --text-dim: #8B949E;
+    --accent: #58A6FF;
+    --accent-dim: #1F3A5F;
+    --sev-high: #F85149;
+    --sev-medium: #D29922;
+    --sev-low: #3FB950;
+    --conf-high: #3FB950;
+    --conf-medium: #D29922;
+    --conf-low: #8B949E;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  header h1 span {
+    color: var(--accent);
+  }
+
+  header p {
+    color: var(--text-dim);
+    font-size: 13px;
+    font-family: var(--mono);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .incident-list {
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .incident-list h2 {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    margin-bottom: 4px;
+  }
+
+  .incident-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .incident-card:hover {
+    background: var(--surface-hover);
+    border-color: var(--accent);
+  }
+
+  .incident-card.active {
+    border-color: var(--accent);
+    background: var(--surface-hover);
+  }
+
+  .incident-card .id-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .incident-card .inc-id {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .incident-card .pipeline {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .incident-card .error-preview {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .badge.triaged {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--conf-high);
+    border: 1px solid rgba(63, 185, 80, 0.3);
+  }
+
+  .badge.pending {
+    background: rgba(139, 148, 158, 0.1);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  .main-panel {
+    padding: 32px;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    text-align: center;
+    gap: 12px;
+  }
+
+  .empty-state .icon {
+    font-family: var(--mono);
+    font-size: 32px;
+    color: var(--border);
+  }
+
+  .incident-detail h3 {
+    font-family: var(--mono);
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .incident-detail .subtitle {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .error-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--sev-high);
+    border-radius: 6px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .triage-btn {
+    background: var(--accent);
+    color: #0D1117;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-bottom: 24px;
+  }
+
+  .triage-btn:hover { opacity: 0.85; }
+  .triage-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .report {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .report-header {
+    background: var(--surface);
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .report-header .label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+
+  .pill-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .pill.sev-high { color: var(--sev-high); border-color: var(--sev-high); background: rgba(248,81,73,0.1); }
+  .pill.sev-medium { color: var(--sev-medium); border-color: var(--sev-medium); background: rgba(210,153,34,0.1); }
+  .pill.sev-low { color: var(--sev-low); border-color: var(--sev-low); background: rgba(63,185,80,0.1); }
+
+  .pill.conf-high { color: var(--conf-high); border-color: var(--conf-high); background: rgba(63,185,80,0.1); }
+  .pill.conf-medium { color: var(--conf-medium); border-color: var(--conf-medium); background: rgba(210,153,34,0.1); }
+  .pill.conf-low { color: var(--conf-low); border-color: var(--conf-low); background: rgba(139,148,158,0.1); }
+
+  .report-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section .section-label::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .section-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .evidence-item {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .evidence-item::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .owner-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .owner-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .owner-contact {
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .footer-note {
+    margin-top: 32px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>pipeline<span>-triage</span>-agent</h1>
+  <p>AI-powered root cause analysis for data pipeline failures</p>
+</header>
+
+<div class="layout">
+  <div class="incident-list">
+    <h2>Incoming Incidents</h2>
+    <div id="incidents"></div>
+  </div>
+
+  <div class="main-panel" id="main-panel">
+    <div class="empty-state">
+      <div class="icon">&lt;/&gt;</div>
+      <div>Select an incident to begin triage</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let incidents = [];
+let activeId = null;
+const reportCache = {};
+
+async function loadIncidents() {
+  const res = await fetch(`${API}/api/incidents`);
+  incidents = await res.json();
+  renderIncidentList();
+}
+
+function renderIncidentList() {
+  const container = document.getElementById('incidents');
+  container.innerHTML = incidents.map(inc => `
+    <div class="incident-card ${inc.incident_id === activeId ? 'active' : ''}" onclick="selectIncident('${inc.incident_id}')">
+      <div class="id-row">
+        <span class="inc-id">${inc.incident_id}</span>
+        <span class="badge ${inc.triaged ? 'triaged' : 'pending'}">${inc.triaged ? 'Triaged' : 'Pending'}</span>
+      </div>
+      <div class="pipeline">${inc.pipeline_name}</div>
+      <div class="error-preview">${escapeHtml(inc.error_message)}</div>
+    </div>
+  `).join('');
+}
+
+async function selectIncident(id) {
+  activeId = id;
+  renderIncidentList();
+
+  const incident = incidents.find(i => i.incident_id === id);
+  const full = await (await fetch(`${API}/api/incidents/${id}`)).json();
+
+  const panel = document.getElementById('main-panel');
+  panel.innerHTML = `
+    <div class="incident-detail">
+      <h3>${id}</h3>
+      <div class="subtitle">${full.pipeline_name} &middot; ${formatTimestamp(full.timestamp)}</div>
+      <div class="error-box">${escapeHtml(full.error_message)}${full.stack_trace_snippet ? '\n\n' + escapeHtml(full.stack_trace_snippet) : ''}</div>
+      <div id="triage-area"></div>
+    </div>
+  `;
+
+  const triageArea = document.getElementById('triage-area');
+
+  if (reportCache[id]) {
+    renderReport(triageArea, reportCache[id]);
+  } else {
+    triageArea.innerHTML = `<button class="triage-btn" onclick="runTriage('${id}')">Run Triage Agent</button>`;
+  }
+}
+
+async function runTriage(id) {
+  const triageArea = document.getElementById('triage-area');
+  triageArea.innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Agent investigating — checking commits, schema history, and past incidents...</span>
+    </div>
+  `;
+
+  try {
+    const res = await fetch(`${API}/api/triage/${id}`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Triage failed');
+    }
+    const report = await res.json();
+    reportCache[id] = report;
+
+    // Update incident list to show "Triaged" badge
+    const inc = incidents.find(i => i.incident_id === id);
+    if (inc) inc.triaged = true;
+    renderIncidentList();
+
+    renderReport(triageArea, report);
+  } catch (e) {
+    triageArea.innerHTML = `
+      <div class="error-box" style="border-left-color: var(--sev-high);">
+        Triage failed: ${escapeHtml(e.message)}
+      </div>
+      <button class="triage-btn" onclick="runTriage('${id}')">Retry</button>
+    `;
+  }
+}
+
+function renderReport(container, report) {
+  const sev = (report.severity || 'medium').toLowerCase();
+  const conf = (report.confidence || 'low').toLowerCase();
+
+  container.innerHTML = `
+    <div class="report">
+      <div class="report-header">
+        <span class="label">Triage Report</span>
+        <div class="pill-group">
+          <span class="pill conf-${conf}">Confidence: ${conf}</span>
+          <span class="pill sev-${sev}">Severity: ${sev}</span>
+        </div>
+      </div>
+      <div class="report-body">
+        <div class="section">
+          <div class="section-label">Root Cause</div>
+          <div class="section-content">${escapeHtml(report.root_cause || 'Unknown')}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Evidence</div>
+          <div class="evidence-list">
+            ${(report.evidence || []).map(e => `<div class="evidence-item">${escapeHtml(e)}</div>`).join('')}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Suggested Fix</div>
+          <div class="section-content">${escapeHtml(report.suggested_fix || 'No suggestion available')}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-label">Notify Owner</div>
+          <div class="owner-row">
+            <div class="owner-avatar">${initials(report.owner)}</div>
+            <div>
+              <div>${escapeHtml(report.owner || 'Unknown')}</div>
+              <div class="owner-contact">${escapeHtml(report.owner_contact || '')}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function formatTimestamp(ts) {
+  try {
+    return new Date(ts).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    return ts;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadIncidents();
+</script>
+
+</body>
+</html>

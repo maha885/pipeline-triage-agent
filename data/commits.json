@@ -1,0 +1,56 @@
+[
+  {
+    "commit_hash": "a3f9c12",
+    "pipeline_name": "customer_orders_etl",
+    "author": "Priya Sharma",
+    "timestamp": "2026-06-12T14:32:00Z",
+    "message": "Refactor order status mapping - add 'partially_refunded' and 'pending_review' statuses",
+    "files_changed": ["transforms/order_status_mapper.py"],
+    "diff_summary": "Renamed enum field 'order_status' values from uppercase (PAID, REFUNDED) to lowercase (paid, refunded) for consistency with API v2 response format. Added two new status values."
+  },
+  {
+    "commit_hash": "b7d2e88",
+    "pipeline_name": "user_events_streaming",
+    "author": "Arjun Mehta",
+    "timestamp": "2026-06-10T09:15:00Z",
+    "message": "Bump Spark Structured Streaming checkpoint interval from 30s to 60s for cost optimization",
+    "files_changed": ["streaming/event_processor.py", "config/spark_config.yaml"],
+    "diff_summary": "Increased checkpoint interval to reduce small-file overhead in the lake. No schema changes."
+  },
+  {
+    "commit_hash": "c9e1f45",
+    "pipeline_name": "finance_revenue_aggregation",
+    "author": "Sara Lin",
+    "timestamp": "2026-06-08T11:00:00Z",
+    "message": "Add support for multi-currency revenue normalization",
+    "files_changed": ["transforms/currency_normalizer.py", "sql/daily_revenue_agg.sql"],
+    "diff_summary": "Added a join against warehouse.dim_exchange_rates to convert all revenue figures to USD before aggregation. Assumes dim_exchange_rates has a row for every (currency, date) combination."
+  },
+  {
+    "commit_hash": "d4a8b71",
+    "pipeline_name": "inventory_sync",
+    "author": "Arjun Mehta",
+    "timestamp": "2026-06-11T16:45:00Z",
+    "message": "Increase batch size for SAP export ingestion from 5000 to 20000 rows",
+    "files_changed": ["ingestion/sap_export_loader.py"],
+    "diff_summary": "Increased batch size to reduce number of API calls to SAP export endpoint. Memory allocation for the ingestion pod was not changed."
+  },
+  {
+    "commit_hash": "e1c3a90",
+    "pipeline_name": "marketing_campaign_attribution",
+    "author": "Diego Fernandez",
+    "timestamp": "2026-06-09T08:20:00Z",
+    "message": "Add Meta Ads API v21 fields for creative-level attribution",
+    "files_changed": ["ingestion/meta_ads_client.py"],
+    "diff_summary": "Updated Meta Ads client to request additional fields (creative_id, creative_name) introduced in API v21. Field is optional in the response per Meta docs."
+  },
+  {
+    "commit_hash": "f6b9d33",
+    "pipeline_name": "customer_support_tickets_etl",
+    "author": "Priya Sharma",
+    "timestamp": "2026-06-05T13:10:00Z",
+    "message": "Minor: update Zendesk API client timeout from 30s to 60s",
+    "files_changed": ["ingestion/zendesk_client.py"],
+    "diff_summary": "Increased HTTP client timeout to handle occasional slow Zendesk API responses during peak hours."
+  }
+]

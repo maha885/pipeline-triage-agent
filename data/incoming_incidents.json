@@ -1,0 +1,34 @@
+[
+  {
+    "incident_id": "INC-2001",
+    "pipeline_name": "customer_orders_etl",
+    "timestamp": "2026-06-12T15:05:00Z",
+    "error_message": "Transform step failed: ValueError: invalid literal for OrderStatus enum: 'paid'. Allowed values: ['PAID', 'REFUNDED', 'CANCELLED', 'PENDING']",
+    "stack_trace_snippet": "File \"transforms/order_status_mapper.py\", line 47, in map_status\n    return OrderStatus[raw_status]\nKeyError: 'paid'",
+    "expected_root_cause_hint": "schema drift from upstream Shopify API v2 (uppercase->lowercase enum change), compounded by recent commit a3f9c12 which itself was trying to address API v2 but mapping logic still expects old enum casing in this code path"
+  },
+  {
+    "incident_id": "INC-2002",
+    "pipeline_name": "finance_revenue_aggregation",
+    "timestamp": "2026-06-12T02:15:00Z",
+    "error_message": "Currency normalization step failed: KeyError: 'INR' not found in exchange_rate_lookup for date 2026-06-11",
+    "stack_trace_snippet": "File \"transforms/currency_normalizer.py\", line 33, in normalize_to_usd\n    rate = exchange_rate_lookup[(currency, date)]\nKeyError: ('INR', '2026-06-11')",
+    "expected_root_cause_hint": "data gap in dim_exchange_rates for INR/BRL on 2026-06-11 due to vendor feed delay, combined with recent commit c9e1f45 which added a hard dependency on dim_exchange_rates having complete data with no fallback"
+  },
+  {
+    "incident_id": "INC-2003",
+    "pipeline_name": "inventory_sync",
+    "timestamp": "2026-06-12T08:30:00Z",
+    "error_message": "Pod inventory-sync-worker-7f9d killed: OOMKilled (exit code 137)",
+    "stack_trace_snippet": "Kubernetes event: container 'sap-export-loader' was OOMKilled. Memory limit: 1Gi. Memory usage at time of kill: ~1.02Gi",
+    "expected_root_cause_hint": "recent commit d4a8b71 increased batch size 4x (5000->20000 rows) without increasing pod memory; combined with schema_changes showing SAP export volume increase ~4x from new EMEA warehouses, this matches past incident INC-1103 pattern almost exactly"
+  },
+  {
+    "incident_id": "INC-2004",
+    "pipeline_name": "marketing_campaign_attribution",
+    "timestamp": "2026-06-12T05:10:00Z",
+    "error_message": "WARNING: ingestion completed with 2 unrecognized fields in response payload (creative_id, creative_name). Pipeline did not fail but downstream dbt model 'stg_meta_ads' dropped these columns silently.",
+    "stack_trace_snippet": "No exception raised. Logged warning only:\nWARN ingestion.meta_ads_client: unexpected fields in response: ['creative_id', 'creative_name']",
+    "expected_root_cause_hint": "low severity / informational - recent commit e1c3a90 added these fields intentionally for upcoming creative-level attribution feature, but downstream schema/dbt model not yet updated to capture them. Similar pattern to past INC-1156 but lower severity since pipeline did not fail."
+  }
+]

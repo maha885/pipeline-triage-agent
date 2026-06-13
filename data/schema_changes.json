@@ -1,0 +1,50 @@
+[
+  {
+    "table_name": "raw.shopify_orders",
+    "change_type": "value_format_change",
+    "timestamp": "2026-06-12T14:00:00Z",
+    "description": "Shopify API v2 migration: 'order_status' field values changed from uppercase enums (PAID, REFUNDED, CANCELLED) to lowercase (paid, refunded, cancelled). Two new values added: 'partially_refunded', 'pending_review'.",
+    "changed_by": "external (Shopify API upgrade)",
+    "breaking": true
+  },
+  {
+    "table_name": "warehouse.dim_exchange_rates",
+    "change_type": "data_gap",
+    "timestamp": "2026-06-11T23:00:00Z",
+    "description": "Exchange rate feed from external provider (OpenExchangeRates) failed to load rates for 'INR' and 'BRL' for 2026-06-11. Table has no rows for these currencies on this date.",
+    "changed_by": "external (vendor feed delay)",
+    "breaking": true
+  },
+  {
+    "table_name": "raw.sap_inventory_export",
+    "change_type": "volume_increase",
+    "timestamp": "2026-06-11T12:00:00Z",
+    "description": "SAP export file size increased ~4x (from ~50MB to ~210MB per export) due to new warehouse locations added in EMEA region going live.",
+    "changed_by": "external (SAP system change)",
+    "breaking": false
+  },
+  {
+    "table_name": "raw.ad_spend_meta",
+    "change_type": "schema_addition",
+    "timestamp": "2026-06-09T08:00:00Z",
+    "description": "Meta Ads API v21 added new optional fields 'creative_id' and 'creative_name' to the ad performance response payload.",
+    "changed_by": "external (Meta API v21)",
+    "breaking": false
+  },
+  {
+    "table_name": "raw.kafka_user_events",
+    "change_type": "no_change",
+    "timestamp": "2026-06-01T00:00:00Z",
+    "description": "No recent schema changes detected on this source.",
+    "changed_by": "n/a",
+    "breaking": false
+  },
+  {
+    "table_name": "raw.zendesk_tickets",
+    "change_type": "no_change",
+    "timestamp": "2026-05-20T00:00:00Z",
+    "description": "No recent schema changes detected on this source.",
+    "changed_by": "n/a",
+    "breaking": false
+  }
+]

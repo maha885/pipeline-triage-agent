@@ -1,0 +1,57 @@
+[
+  {
+    "incident_id": "INC-1042",
+    "pipeline_name": "customer_orders_etl",
+    "timestamp": "2026-03-14T10:22:00Z",
+    "error_signature": "ValueError: invalid literal for OrderStatus enum: 'PAID'",
+    "error_message": "Transform step failed: unrecognized order_status value 'PAID' not in allowed enum [paid, refunded, cancelled, pending]",
+    "root_cause": "Upstream Shopify API changed order_status casing from lowercase to uppercase without notice; transform enum mapping was case-sensitive.",
+    "resolution": "Updated order_status_mapper.py to normalize casing before enum lookup (added .lower() call). Added a unit test for casing variants.",
+    "resolved_by": "Priya Sharma",
+    "time_to_resolve_minutes": 95
+  },
+  {
+    "incident_id": "INC-1077",
+    "pipeline_name": "finance_revenue_aggregation",
+    "timestamp": "2026-04-02T03:10:00Z",
+    "error_signature": "KeyError: 'EUR' not found in exchange_rate_lookup",
+    "error_message": "Currency normalization step failed: no exchange rate found for currency 'EUR' on date 2026-04-01",
+    "root_cause": "dim_exchange_rates table was missing a row for EUR on that date due to a delayed vendor feed (OpenExchangeRates outage).",
+    "resolution": "Added a fallback step that uses the previous day's exchange rate if the current day's rate is missing, with a logged warning. Also added a data quality check alerting if dim_exchange_rates has gaps.",
+    "resolved_by": "Sara Lin",
+    "time_to_resolve_minutes": 140
+  },
+  {
+    "incident_id": "INC-1103",
+    "pipeline_name": "inventory_sync",
+    "timestamp": "2026-04-20T14:05:00Z",
+    "error_signature": "OOMKilled: container exceeded memory limit (512Mi)",
+    "error_message": "Ingestion pod was OOMKilled while processing SAP export file",
+    "root_cause": "SAP export file size grew due to new product categories being added; ingestion pod memory limit was not scaled accordingly.",
+    "resolution": "Increased ingestion pod memory limit from 512Mi to 2Gi and switched to streaming/chunked file parsing instead of loading the full file into memory.",
+    "resolved_by": "Arjun Mehta",
+    "time_to_resolve_minutes": 60
+  },
+  {
+    "incident_id": "INC-1130",
+    "pipeline_name": "user_events_streaming",
+    "timestamp": "2026-05-05T22:40:00Z",
+    "error_signature": "StreamingQueryException: checkpoint directory corrupted",
+    "error_message": "Spark streaming job failed to restart: checkpoint directory in inconsistent state after manual config change",
+    "root_cause": "Checkpoint interval was changed while the streaming job was running, causing checkpoint metadata mismatch on restart.",
+    "resolution": "Stopped the job gracefully, cleared the checkpoint directory, and restarted with the new config from a fresh checkpoint. Documented that config changes affecting checkpointing require a planned restart.",
+    "resolved_by": "Arjun Mehta",
+    "time_to_resolve_minutes": 45
+  },
+  {
+    "incident_id": "INC-1156",
+    "pipeline_name": "marketing_campaign_attribution",
+    "timestamp": "2026-05-18T06:30:00Z",
+    "error_signature": "ParserError: unexpected field 'creative_id' in response schema",
+    "error_message": "Meta Ads ingestion failed strict schema validation: unexpected field 'creative_id' not defined in expected schema",
+    "root_cause": "Meta Ads API added new fields not present in the strict Avro schema used for validation.",
+    "resolution": "Updated the Avro schema to include the new optional fields and relaxed validation to allow additional unknown fields (forward compatibility).",
+    "resolved_by": "Diego Fernandez",
+    "time_to_resolve_minutes": 75
+  }
+]

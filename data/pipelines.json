@@ -1,0 +1,62 @@
+[
+  {
+    "pipeline_name": "customer_orders_etl",
+    "description": "Extracts orders from Shopify API, transforms, loads into warehouse fact table",
+    "source_tables": ["raw.shopify_orders"],
+    "target_table": "warehouse.fact_orders",
+    "schedule": "every 30 minutes",
+    "owner": "Priya Sharma",
+    "owner_team": "Commerce Data Team",
+    "owner_contact": "priya.sharma@company.com"
+  },
+  {
+    "pipeline_name": "user_events_streaming",
+    "description": "Streams clickstream events from Kafka into the events lake, deduplicates and enriches with user profile data",
+    "source_tables": ["raw.kafka_user_events", "warehouse.dim_users"],
+    "target_table": "warehouse.fact_user_events",
+    "schedule": "continuous (Spark Streaming)",
+    "owner": "Arjun Mehta",
+    "owner_team": "Platform Data Team",
+    "owner_contact": "arjun.mehta@company.com"
+  },
+  {
+    "pipeline_name": "finance_revenue_aggregation",
+    "description": "Aggregates daily revenue figures from fact_orders and fact_refunds into finance reporting marts",
+    "source_tables": ["warehouse.fact_orders", "warehouse.fact_refunds"],
+    "target_table": "marts.finance_daily_revenue",
+    "schedule": "daily at 02:00 UTC",
+    "owner": "Sara Lin",
+    "owner_team": "Finance Data Team",
+    "owner_contact": "sara.lin@company.com"
+  },
+  {
+    "pipeline_name": "inventory_sync",
+    "description": "Syncs warehouse inventory levels from the ERP system (SAP) into the inventory dimension table",
+    "source_tables": ["raw.sap_inventory_export"],
+    "target_table": "warehouse.dim_inventory",
+    "schedule": "every 4 hours",
+    "owner": "Arjun Mehta",
+    "owner_team": "Platform Data Team",
+    "owner_contact": "arjun.mehta@company.com"
+  },
+  {
+    "pipeline_name": "marketing_campaign_attribution",
+    "description": "Joins ad spend data from Google/Meta APIs with conversion events to compute campaign ROI",
+    "source_tables": ["raw.ad_spend_google", "raw.ad_spend_meta", "warehouse.fact_user_events"],
+    "target_table": "marts.campaign_attribution",
+    "schedule": "daily at 05:00 UTC",
+    "owner": "Diego Fernandez",
+    "owner_team": "Marketing Data Team",
+    "owner_contact": "diego.fernandez@company.com"
+  },
+  {
+    "pipeline_name": "customer_support_tickets_etl",
+    "description": "Loads support ticket data from Zendesk into the support analytics schema",
+    "source_tables": ["raw.zendesk_tickets"],
+    "target_table": "warehouse.fact_support_tickets",
+    "schedule": "hourly",
+    "owner": "Priya Sharma",
+    "owner_team": "Commerce Data Team",
+    "owner_contact": "priya.sharma@company.com"
+  }
+]
